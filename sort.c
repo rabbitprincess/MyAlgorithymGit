@@ -29,8 +29,15 @@ int mergeSort(int low,int high) {
 	free(tmpArr);
 }
 
-int quickSort() {
+void quickSort(int left,int right) {
+	int index = 0, mid = (right+left)/2, pivot = a[left];
+	while (left < right) {
 
+	
+
+	}
+	quickSort(left, mid);
+	quickSort(mid + 1, right);
 
 }
 
@@ -89,6 +96,23 @@ int main(){
 	for (i = 0; i < 100; i++) {
 		printf("%d ", a[i]);
 	}//merge sort
+
+
+	printf("\n\n\n");
+	for (i = 0; i<100; i++)
+	{
+		a[i] = rand() % 1000;
+	}
+
+	for (i = 0; i < 100; i++) {
+		printf("%d ", a[i]);
+	}//quick sort
+	printf("\n\n\n");
+	quickSort(0, 99);
+
+	for (i = 0; i < 100; i++) {
+		printf("%d ", a[i]);
+	}//quick sort
 
 	printf("\n");
 	scanf("%d ", &i);
