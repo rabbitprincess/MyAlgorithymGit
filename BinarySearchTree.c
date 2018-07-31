@@ -4,8 +4,10 @@
 
 typedef struct tagNode {
 	int element;
+	struct tagNode *parent;
 	struct tagNode *left;
 	struct tagNode *right;
+	enum { RED, BLACK } Color;
 }Node;
 
 Node* createNode(int element,Node *left,Node *right){
@@ -31,6 +33,17 @@ Node* searchNode(int element,Node *tmp) {
 		searchNode(element, tmp->left);
 	}
 }
+
+void RotateRight(Node **root, Node *Parent)//root를 바꿀 것이기 때문에 Node **root를 사용. 
+{
+	Node *leftChild = Parent->left;
+	Parent->left = LeftChild->Right;
+
+
+}
+
+
+
 void appendNode(int element,Node *root) {
 	Node *tmp;
 	if(element>root->element){
