@@ -29,17 +29,8 @@ int mergeSort(int low,int high) {
 	free(tmpArr);
 }
 
-void quickSort(int left,int right) {
-	int index = 0, mid = (right+left)/2, pivot = a[left];
-	while (left < right) {
+void Q
 
-	
-
-	}
-	quickSort(left, mid);
-	quickSort(mid + 1, right);
-
-}
 
 int main(){
 	int i,j, tmp;
