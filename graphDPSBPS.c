@@ -2,17 +2,12 @@
 #include<stdlib.h>
 #include<string.h>
 
-void swap(int *a, int *b) {
-	int tmp = *a;
-	*a = *b;
-	*b = tmp;
-}
-
 typedef struct tagVertex {
 	int num;
-	int fresh;//¹æ¹®Çß´ø ³ëµå¿´´ÂÁö È®ÀÎÇÏ±â À§ÇÔ
+	int fresh;//ë°©ë¬¸í–ˆë˜ ë…¸ë“œì˜€ëŠ”ì§€ í™•ì¸í•˜ê¸° ìœ„í•¨
+	int height;
 	struct tagNode *head;
-}Vertex;//Á¤Á¡
+}Vert;//ì •ì 
 
 typedef struct tagNode {
 	struct tagNode* nextNode;
@@ -21,115 +16,152 @@ typedef struct tagNode {
 }Node;
 
 typedef struct tagEdge {
-	int weight;//°£¼±ÀÇ ¿ì¼±¼øÀ§. Áö±İÀº ÀÇ¹Ì¾øÀ½.
-	int fresh;//¹æ¹®Çß´ø ³ëµå¿´´ÂÁö È®ÀÎÇÏ±â À§ÇÔ
-	Vertex* vert1;
-	Vertex* vert2;
-}Edge;//°£¼±
+	int weight;//ê°„ì„ ì˜ ìš°ì„ ìˆœìœ„. ì§€ê¸ˆì€ ì˜ë¯¸ì—†ìŒ.
+	int fresh;//ë°©ë¬¸í–ˆë˜ ë…¸ë“œì˜€ëŠ”ì§€ í™•ì¸í•˜ê¸° ìœ„í•¨
+	Vert* vert1;
+	Vert* vert2;
+}Edge;//ê°„ì„ 
 
-Vertex* makeVertexNode(int i) {
-	Vertex* vert = (Vertex*)malloc(sizeof(Vertex));
-	vert->num = i;
-	vert->fresh = 0;//¾ÆÁ÷ ¹æ¹®ÇÏÁö ¾ÊÀ½
-	vert->head = (Node*)malloc(sizeof(Node));//dummy head node;
-	vert->head->vert = vert;
-	vert->head->edge = NULL;
-	vert->head->nextNode = NULL;
-	return vert;
+
+void swap(int *a, int *b) {
+	int tmp = *a;
+	*a = *b;
+	*b = tmp;
 }
-
-Edge* makeEdgeNode(int a, int b,Vertex** vert) {
-	Edge* edge = (Edge*)malloc(sizeof(Edge));
-	if (a < b) swap(&a, &b);//a´Â b¿Í °°°Å³ª ÀÛÀ½.
-	edge->vert1 = vert[a - 1];
-	edge->vert2 = vert[b - 1];
-	edge->fresh = 0;//¾ÆÁ÷ ¹æ¹®ÇÏÁö ¾ÊÀ½
-	edge->weight = 0; //dummy
-	return edge;
+Node* makeNode(Vert* vert, Edge* edge) {
+	Node* tmp = (Node*)malloc(sizeof(Node));
+	tmp->edge = edge;
+	tmp->vert = vert;
+	tmp->nextNode = NULL;
+	return tmp;
 }
-
-void insertNode(Vertex* vert, Edge* edge) {
+Vert* opposite(Edge *edge, Vert* vert) {
+	if (edge->vert1 != vert) return edge->vert1;
+	else return edge->vert2;
+}
+void insertNode(Vert* vert, Edge* edge) {
 	Node* tmp = vert->head;
-	int x;
-	if (vert->num != edge->vert1->num) x = edge->vert1->num;
-	else x = edge->vert2->num;
+	Vert* x = opposite(edge,vert);
 	while (tmp->nextNode != NULL) {
-		int x2;
-		if (vert->num != tmp->nextNode->edge->vert1->num) 
-			x2 = tmp->nextNode->edge->vert1->num;
-		else x2 = tmp->nextNode->edge->vert2->num;
-		if (x < x2) break;
+		Vert* x2 = opposite(tmp->nextNode->edge, vert);
+		if (x->num < x2->num) break;
 		tmp = tmp->nextNode;
 	}
-	Node *tmp2 = (Node*)malloc(sizeof(Node));
-	tmp2->edge = edge;
-	tmp2->vert = vert;
+	Node *tmp2 = makeNode(vert, edge);
 	tmp2->nextNode = tmp->nextNode;
 	tmp->nextNode = tmp2;
 }
 
-void DepthFirstSearch(Vertex* vert) {
-	printf("%d\n",vert->num);
-	vert->fresh = 1;//³ëµå°¡ »ç¿ëµÇ¾ú´Ù´Â °ÍÀ» Ç¥½Ã.
+
+Vert** makeVertex(int N) {
+	Vert** tmp = (Vert**)calloc(sizeof(Vert*), (N + 1));
+	int i;
+	for (i = 0; i < N; i++) {
+		tmp[i] = (Vert*)malloc(sizeof(Vert));
+		tmp[i]->num = i + 1;
+		tmp[i]->fresh = 0;
+		tmp[i]->height = 0;
+		tmp[i]->head = makeNode(tmp[i], NULL);//dummy head Node ì¶”ê°€
+	}
+	return tmp;
+}
+
+Edge* makeEdgeNode(int a, int b, Vert** vert) {
+	Edge* edge = (Edge*)malloc(sizeof(Edge));
+	if (a < b) swap(&a, &b);//aëŠ” bì™€ ê°™ê±°ë‚˜ ì‘ìŒ.
+	edge->vert1 = vert[a - 1];
+	edge->vert2 = vert[b - 1];
+	edge->fresh = 0;//ì•„ì§ ë°©ë¬¸í•˜ì§€ ì•ŠìŒ
+	edge->weight = 0; //dummy
+	return edge;
+}
+
+Edge** makeEdge(Vert** vert, int M) {
+	int i;
+	Edge** edge = (Edge**)malloc(sizeof(Edge*)*M);
+
+	for (i = 0; i < M; i++) {
+		int a, b;
+
+		scanf("%d %d", &a, &b);
+		edge[i] = makeEdgeNode(a, b, vert);
+		insertNode(vert[a - 1], edge[i]);
+		if (edge[i]->vert1 != edge[i]->vert2) insertNode(vert[b - 1], edge[i]);
+	}//ê°„ì„ ê³¼ ë…¸ë“œì˜ ì´ˆê¸°í™”.
+	return edge;
+}
+
+
+
+void DFS(Vert* vert) {
+	printf("%d\n", vert->num);
+	vert->fresh = 1;//ë…¸ë“œê°€ ì‚¬ìš©ë˜ì—ˆë‹¤ëŠ” ê²ƒì„ í‘œì‹œ.
 	Node* tmp = vert->head;
 	while (tmp->nextNode != NULL) {
 		tmp = tmp->nextNode;
-		if (tmp->edge->fresh == 1) continue;
-		else {
-			tmp->edge->fresh = 1;
-			if (tmp->edge->vert1 == vert && tmp->edge->vert2->fresh == 0) DepthFirstSearch(tmp->edge->vert2);
-			else if(tmp->edge->vert1->fresh == 0) DepthFirstSearch(tmp->edge->vert1);
-		}
-	}
-}
-
-void BreadthFirstSearch(Vertex* vert,int N) {
-	printf("%d\n", vert->num);
-	vert->fresh = 1;
-	Vertex** oldHeap = (Vertex**)calloc(sizeof(Vertex*),N);
-	Vertex** newHeap = (Vertex**)calloc(sizeof(Vertex*),N);
-	int x = 0, y = 0, z = 0;//Èü ³ëµå ¹è¿­¿¡ ³ëµå¸¦ Ãß°¡ÇÏ±â À§ÇÑ º¯¼ö. Ã³À½¿¡´Â ÇÑ°³ µé¾îÀÖÀ½.
-	oldHeap[x] = vert;//Ã³À½ ÃÊ±âÈ­.
-	x++;
-	while (1) {
-		y = 0, z = 0;
-		for (y = 0; y < x; y++)
+		if (tmp->edge->fresh == 0)
 		{
-			Node* tmp = oldHeap[y]->head;
-			while (tmp->nextNode != NULL) {
-				tmp = tmp->nextNode;
-				if (tmp->vert == tmp->edge->vert1) {
-					if (tmp->edge->vert2->fresh == 1) continue;
-					else {
-						newHeap[z] = tmp->edge->vert2;
-						z++;
-						tmp->edge->vert2->fresh = 1;
-					}
-				}
-				else if (tmp->edge->vert1->fresh == 1) continue;
-				else {
-					newHeap[z] = tmp->edge->vert1;
-					z++;
-					tmp->edge->vert1->fresh = 1;
-				}
-			}
-		}//newvert¿¡ ÀúÀå.
-		if (z == 0) break;
-		x = z;
-		for (y = 0; y < x; y++) {
-			oldHeap[y] = newHeap[y];
-		}
-		int t = 0;
-		while (t < z) {
-			printf("%d\n", newHeap[t]->num);
-			t++;
+			tmp->edge->fresh = 1;
+			Vert* op = opposite(tmp->edge, tmp->vert);
+			if(op->fresh == 0) DFS(op);
 		}
 	}
-	free(oldHeap);
-	free(newHeap);
+}
+void DepthFirstSearch(Vert** vert, Edge** edge, int N, int M, int S) {
+	int i;
+	for (i = 0; i < N; i++) {
+		vert[i]->fresh = 0;
+	}//vert initialization
+	for (i = 0; i < M; i++) {
+		edge[i]->fresh = 0;
+	}//edge initialization
+	DFS(vert[S - 1]);
+	for (i = 0; i < N; i++) {
+		if(vert[i]->fresh == 0) DFS(vert[i]);
+	}//ë™ë–¨ì–´ì ¸ ìˆëŠ” ë…¸ë“œê°€ ìˆëŠ”ì§€ í™•ì¸
 }
 
-void printEdge(Vertex** vert) {
+
+
+void BFS(Vert* vert, int N) {
+	vert->fresh = 1;
+	Vert** Queue = (Vert**)calloc(sizeof(Vert*), N);
+	int start = 0, end = 0;//í™ ë…¸ë“œ ë°°ì—´ì— ë…¸ë“œë¥¼ ì¶”ê°€í•˜ê¸° ìœ„í•œ ë³€ìˆ˜. ì²˜ìŒì—ëŠ” í•œê°œ ë“¤ì–´ìˆìŒ.
+	Queue[end] = vert;//ì²˜ìŒ ì´ˆê¸°í™”.
+	end++;
+	while (start < end) {	
+		Node* tmp = Queue[start]->head;
+		start++;
+		printf("%d\n", tmp->vert->num);
+		while (tmp->nextNode != NULL) {
+			tmp = tmp->nextNode;
+			if (tmp->edge->fresh == 1) continue;
+			Vert* op = opposite(tmp->edge,tmp->vert);
+			if (op->fresh == 0) {
+				tmp->edge->fresh = 1;
+				op->fresh = 1;
+				Queue[end] = op;
+				end++;
+			}
+		}
+	}
+	free(Queue);
+}
+void BreadthFirstSearch(Edge** edge, Vert** vert, int N, int M, int S) {
+	int i;
+	for (i = 0; i < N; i++) {
+		vert[i]->fresh = 0;
+	}//vert initialization
+	for (i = 0; i < M; i++) {
+		edge[i]->fresh = 0;
+	}//edge initialization
+	BFS(vert[S - 1],N);
+	for (i = 0; i < N; i++) {
+		if (vert[i]->fresh == 0) BFS(vert[i], N);
+	}
+}
+
+void printEdge(Vert** vert) {
 	int n;
 	scanf("%d", &n);
 	Node *tmp = vert[n]->head->nextNode;
@@ -137,40 +169,21 @@ void printEdge(Vertex** vert) {
 		int result;
 		if (tmp->edge->vert1->num == vert[n]->num) result = tmp->edge->vert2->num;
 		else result = tmp->edge->vert1->num;
-		printf(" %d °¡ÁßÄ¡: %d\n", result, tmp->edge->weight);
+		printf(" %d ê°€ì¤‘ì¹˜: %d\n", result, tmp->edge->weight);
 		tmp = tmp->nextNode;
 	}
 }
 
 int main() {
-	int N, M, S,i;
-	printf("³ëµå ¼ıÀÚ¿Í °£¼± ¼ıÀÚ¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä:\n");//¸®½ºÆ® Çü½ÄÀ¸·Îµµ ¸¸µé ¼ö ÀÖ´Ù.
-	scanf("%d %d %d", &N, &M, &S);//³ëµå ¼ıÀÚ,°£¼± ¼ıÀÚ,½ÃÀÛÇÏ´Â ³ëµåÀÇ ¼ıÀÚ
-	Vertex** vert = (Vertex**)malloc(sizeof(Vertex*)*N);//N°³ÀÇ ³ëµå¸¦ °¡Áö°í ÀÖ´Â ¹è¿­
-	Edge** edge = (Edge**)malloc(sizeof(Edge*)*M);//M°³ÀÇ °£¼±À» °¡Áö°í ÀÖ´Â ¹è¿­
-
-	for (i = 0; i < N; i++) vert[i] = makeVertexNode(i+1);//Á¤Á¡°ú ³ëµåÀÇ ÃÊ±âÈ­
-	for (i = 0; i < M; i++) {
-		int a, b;
-		scanf("%d %d", &a, &b);
-		edge[i] = makeEdgeNode(a, b, vert);
-		insertNode(vert[a - 1], edge[i]);
-		if (edge[i]->vert1 != edge[i]->vert2) insertNode(vert[b - 1], edge[i]);
-	}//°£¼±°ú ³ëµåÀÇ ÃÊ±âÈ­.
-
+	int N, M, S, i;
+	printf("ë…¸ë“œ ìˆ«ìì™€ ê°„ì„  ìˆ«ì, ìˆœíšŒë¥¼ ì‹œì‘í•  ìˆ«ìë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”:\n");//ë¦¬ìŠ¤íŠ¸ í˜•ì‹ìœ¼ë¡œë„ ë§Œë“¤ ìˆ˜ ìˆë‹¤.
+	scanf("%d %d %d", &N, &M, &S);//ë…¸ë“œ ìˆ«ì,ê°„ì„  ìˆ«ì,ì‹œì‘í•˜ëŠ” ë…¸ë“œì˜ ìˆ«ì
+	Vert** vert = makeVertex(N);
+	Edge** edge = makeEdge(vert,M);
 
 	printf("DepthFirstSearch\n");
-	DepthFirstSearch(vert[S-1]);
-
-	for (i = 0; i < N; i++) {
-		vert[i]->fresh = 0;
-	}
-	for (i = 0; i < M; i++) {
-		edge[i]->fresh = 0;
-	}
-
+	DepthFirstSearch(vert,edge, N, M, S);
 	printf("\nBreadthFirstSearch\n");
-	BreadthFirstSearch(vert[S - 1],N);
-	scanf("%d", &i);
+	BreadthFirstSearch(edge, vert, N, M, S);
 	return 0;
 }
